@@ -23,14 +23,19 @@ module.exports = {
   initFileManager: (fastify) => {
     // Отображение списка файлов
     fastify.get('/files', async (request, reply) => {
-      const directoryPath = path.join(__dirname, ARTILLERY_FOLDER);
+      // const directoryPath = path.join(__dirname, ARTILLERY_FOLDER);
+      const directoryPath = ARTILLERY_FOLDER;
+
       try {
         const items = await listFiles(directoryPath);
         const files = items.map(item => ({
           name: path.basename(item.path),
           path: item.path.replace(__dirname, ''),
           isDirectory: item.isDirectory
-        }));
+        })).filter(item => {
+          const fname = path.basename(item.path);
+          return fname !== '.gitkeep'
+        });
         reply.send(files);
       } catch (err) {
         reply.send(err);

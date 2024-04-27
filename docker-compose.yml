@@ -4,7 +4,6 @@ services:
       context: ./client
     ports:
       - "80:80"
-
   server:
     build:
       context: ./server
@@ -12,6 +11,8 @@ services:
       - "5000:5000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./artillery-volume:/tests
+      - tests:/app/artillery-volume
     depends_on:
       - client
+volumes:
+  tests:

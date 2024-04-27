@@ -5,8 +5,9 @@ const fsPromises = require('fs').promises;
 const { sendEvent, getLocalTime, checkService, runCommand, ARTILLERY_FOLDER, CONFIG_FOLDER, REPORT_FOLDER,
     STDOUT_FOLDER, STDERR_FOLDER
 } = require('./utils');
-const { writeArtilleryConfig } = require('./artillery-utils');
+const { writeArtilleryConfig, runDockerArtillery, reportDockerArtillery} = require('./artillery-utils');
 const path = require('path');
+
 const {initFileManager} = require("./fileManager-utils");
 
 fastify.addContentTypeParser(/^application\/.+\+json$/, { parseAs: 'string' }, fastify.getDefaultJsonParser('error', 'ignore'));
@@ -20,6 +21,10 @@ fastify.register(require('@fastify/static'), {
     prefix: '/public/',
 });
 
+const getCombinedFilename = (a, b, ending='', delimiter='-') => {
+    return [a, b].join(delimiter) + ending;
+};
+
 const getJSONReportFilename = (serviceId, serviceName) => (
     `${serviceId}-${serviceName}-run-report.json`
 );
@@ -27,6 +32,7 @@ const getJSONReportFilename = (serviceId, serviceName) => (
 const getDockerArtilleryRunCommand = (serviceId, serviceName) => (
     `docker run --rm -v $(pwd)/${ARTILLERY_FOLDER}:/tests artilleryio/artillery run --output /tests/${REPORT_FOLDER}/${getJSONReportFilename(serviceId, serviceName)} /tests/${CONFIG_FOLDER}/${serviceId}-${serviceName}.yml`
 );
+
 
 const getDockerArtilleryReportCommand = (serviceId, serviceName) => (
     `docker run --rm -v $(pwd)/${ARTILLERY_FOLDER}:/tests artilleryio/artillery report /tests/${REPORT_FOLDER}/${getJSONReportFilename(serviceId, serviceName)}`
@@ -61,9 +67,13 @@ fastify.get('/run/microservice/:id', async (request, reply) => {
 
     sendMessageToFrontend('The Service has been initialized');
     sendMessageToFrontend('Creating YML config...');
+    const combinedFn = getCombinedFilename(serviceId, serviceName);
+    const configFn = `${combinedFn}.yml`;
+    const reportFn = `${combinedFn}-report.json`;
+    const reportHTMLFn = `${combinedFn}-report.json.html`;
 
     try {
-        await writeArtilleryConfig(request.params.id, service, serviceName);
+        await writeArtilleryConfig(service, configFn);
     }
     catch (error) {
         console.error(error)
@@ -73,14 +83,21 @@ fastify.get('/run/microservice/:id', async (request, reply) => {
     }
     sendMessageToFrontend('Done!');
     sendMessageToFrontend('Running Artillery docker image...');
-    runCommand(getDockerArtilleryRunCommand(serviceId, serviceName))
+    const stdoutFilePath =
+      getCombinedFilename(ARTILLERY_FOLDER, STDOUT_FOLDER, `/${combinedFn}-stdout.txt`, '/');
+    const stderrFilePath =
+      getCombinedFilename(ARTILLERY_FOLDER, STDERR_FOLDER, `/${combinedFn}-stderr.txt`, '/');
+    const stdoutFilePathConvert =
+      getCombinedFilename(ARTILLERY_FOLDER, STDOUT_FOLDER, `/${combinedFn}-convert-stdout.txt`, '/');
+    const stderrFilePathConvert =
+      getCombinedFilename(ARTILLERY_FOLDER, STDERR_FOLDER, `/${combinedFn}-convert-stderr.txt`, '/');
+
+    runDockerArtillery(reportFn, configFn)
         .then(async (stdout) => {
-            const stdoutFilePath = path.join(__dirname, `${ARTILLERY_FOLDER}/${STDOUT_FOLDER}/${serviceId}-${serviceName}-stdout.txt`);
             await fsPromises.writeFile(stdoutFilePath, stdout);
             sendMessageToFrontend('Artillery has successfully finished your task. Stdout written to file ' + stdoutFilePath);
         })
         .catch(async (stderr) => {
-            const stderrFilePath = path.join(__dirname, `${ARTILLERY_FOLDER}/${STDERR_FOLDER}/${serviceId}-${serviceName}-stderr.txt`);
             await fsPromises.writeFile(stderrFilePath, stderr);
             sendMessageToFrontend('An error occurred while performing Artillery tests. stderr written to file ' + stderrFilePath);
             return Promise.reject(stderr);
@@ -88,19 +105,17 @@ fastify.get('/run/microservice/:id', async (request, reply) => {
         .then(async () => {
             sendMessageToFrontend('Converting result to HTML format...');
             try {
-                const stdout = await runCommand(getDockerArtilleryReportCommand(serviceId, serviceName));
-                const stdoutFilePath = path.join(__dirname, `${ARTILLERY_FOLDER}/${STDOUT_FOLDER}/${serviceId}-${serviceName}-convert-stdout.txt`);
-                await fsPromises.writeFile(stdoutFilePath, stdout);
-                const reportFn = `${REPORT_FOLDER}/${getJSONReportFilename(serviceId, serviceName)}.html`;
-                const reportURL = `/public/${reportFn}`;``
-                sendMessageToFrontend(`Converting successful. Generated file: ${reportFn}. Logs: ${stdoutFilePath}`);
+                const stdout = await reportDockerArtillery(reportFn);
+
+                await fsPromises.writeFile(stdoutFilePathConvert, stdout);
+                const reportURL = `/public/${REPORT_FOLDER}/${reportHTMLFn}`;``
+                sendMessageToFrontend(`Converting successful. Generated file: ${reportHTMLFn}. Logs: ${stdoutFilePathConvert}`);
                 sendEvent(reply.raw, { reportURL });
                 closeConnection();
             }
             catch (stderr) {
-                const filePath = path.join(__dirname, `${ARTILLERY_FOLDER}/${STDERR_FOLDER}/${serviceId}-${serviceName}-convert-stderr.txt`);
-                await fsPromises.writeFile(filePath, stderr);
-                sendMessageToFrontend(`Converting failed. stderr written to file ${filePath}`);
+                await fsPromises.writeFile(stderrFilePathConvert, stderr);
+                sendMessageToFrontend(`Converting failed. stderr written to file ${stderrFilePathConvert}`);
                 closeConnection();
             }
         })
