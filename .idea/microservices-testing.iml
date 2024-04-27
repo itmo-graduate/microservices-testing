@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="WEB_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <excludeFolder url="file://$MODULE_DIR$/.tmp" />
+      <excludeFolder url="file://$MODULE_DIR$/temp" />
+      <excludeFolder url="file://$MODULE_DIR$/tmp" />
+      <excludeFolder url="file://$MODULE_DIR$/client/.idea" />
+      <excludeFolder url="file://$MODULE_DIR$/server/.idea" />
+      <excludeFolder url="file://$MODULE_DIR$/server/artillery-volume-classic" />
+      <excludeFolder url="file://$MODULE_DIR$/server/artillery-volume/configs" />
+      <excludeFolder url="file://$MODULE_DIR$/server/artillery-volume/reports" />
+      <excludeFolder url="file://$MODULE_DIR$/server/artillery-volume/stderrs" />
+      <excludeFolder url="file://$MODULE_DIR$/server/artillery-volume/stdouts" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>

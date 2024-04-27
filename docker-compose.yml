@@ -1,0 +1,17 @@
+services:
+  client:
+    build:
+      context: ./client
+    ports:
+      - "80:80"
+
+  server:
+    build:
+      context: ./server
+    ports:
+      - "5000:5000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./artillery-volume:/tests
+    depends_on:
+      - client
