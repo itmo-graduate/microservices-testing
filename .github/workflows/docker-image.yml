@@ -21,10 +21,18 @@ jobs:
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
 
-    - name: Build and run with docker-compose
-      run: |
-        docker-compose up -d --build
-        docker-compose ps
+    - name: Build with docker-compose
+      run: docker-compose up -d --build
+
+    - name: Log Docker Compose processes
+      run: docker-compose ps
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v4
 
     - name: Login to DockerHub
       uses: docker/login-action@v3
@@ -32,8 +40,10 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Tag the Docker image
-      run: docker tag microservices-testing:latest sanicdogg/microservices-testing:latest
+    - name: Push the Docker image (client)
+      run: docker push sanicdogg/microservices-testing-client:latest
 
-    - name: Push the Docker image to DockerHub
-      run: docker push sanicdogg/microservices-testing:latest
+    - name: Push the Docker image (server)
+      run: docker push sanicdogg/microservices-testing-server:latest
+
+
