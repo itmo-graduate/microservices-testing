@@ -26,6 +26,23 @@ jobs:
 
     - name: Log Docker Compose processes
       run: docker-compose ps
+    
+    - name: List Docker images
+      run: docker images
+
+    - name: Save Docker images
+      run: |
+        docker save sanicdogg/microservices-testing-client:latest | gzip > client-image.tar.gz
+        docker save sanicdogg/microservices-testing-server:latest | gzip > server-image.tar.gz
+
+    - name: Upload Docker images
+      uses: actions/upload-artifact@v3
+      with:
+        name: docker-images
+        path: |
+          client-image.tar.gz
+          server-image.tar.gz
+
 
   publish:
     needs: build
@@ -33,6 +50,16 @@ jobs:
     steps:
     - name: Check out repository
       uses: actions/checkout@v4
+
+    - name: Download Docker images
+      uses: actions/download-artifact@v3
+      with:
+        name: docker-images
+  
+    - name: Load Docker images
+      run: |
+        gunzip -c client-image.tar.gz | docker load
+        gunzip -c server-image.tar.gz | docker load
 
     - name: Login to DockerHub
       uses: docker/login-action@v3
