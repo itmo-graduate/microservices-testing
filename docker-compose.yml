@@ -2,13 +2,13 @@ services:
   client:
     build:
       context: ./client
-      image: sanicdogg/microservices-testing-client:latest
+    image: sanicdogg/microservices-testing-client:latest
     ports:
       - "80:80"
   server:
     build:
       context: ./server
-      image: sanicdogg/microservices-testing-server:latest
+    image: sanicdogg/microservices-testing-server:latest
     ports:
       - "5000:5000"
     volumes:
