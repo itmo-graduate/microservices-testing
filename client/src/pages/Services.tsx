@@ -4,14 +4,16 @@ import CloseIcon from '@mui/icons-material/Close';
 import {Service} from '../types/service';
 import {Logs} from '../components/Logs';
 import {LogEntry} from '../types/logs';
-import {SERVER_HOST} from '../const';
+import { SERVER_HOST as initialServerHost } from '../const';
 
 const ServicesPage: React.FC = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState<boolean[]>([]);
   const [reportURL, setReportURL] = useState<string[]>([]);
   const [serviceLogs, setServiceLogs] = useState<Map<string, LogEntry[]>>(new Map());
-  const [testResults, setTestResults] = useState<any>([]);
+  const [_, setTestResults] = useState<any>([]);
+
+  const SERVER_HOST = localStorage.getItem('serverHost') || initialServerHost;
 
   const updateLogs = (serviceId: string, newLog: LogEntry) => {
     console.log('updateLogs', newLog);

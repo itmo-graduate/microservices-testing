@@ -14,7 +14,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import {FileItem, TreeNode} from '../types/fileManager';
-import {SERVER_HOST} from '../const';
+import { SERVER_HOST as initialServerHost } from '../const';
 import CheckIcon from '@mui/icons-material/Check';
 
 const isFile = (item: TreeNode | FileItem): item is FileItem => ('path' in item);
@@ -47,6 +47,8 @@ const FileManager: React.FC = () => {
   // const [files, setFiles] = useState<FileItem[]>([]);
   const [fileTree, setFileTree] = useState<TreeNode>({});
   const [status, setStatus] = useState<String>('');
+
+  const SERVER_HOST = localStorage.getItem('serverHost') || initialServerHost;
 
   useEffect(() => {
     fetch(`${SERVER_HOST}/files`)
